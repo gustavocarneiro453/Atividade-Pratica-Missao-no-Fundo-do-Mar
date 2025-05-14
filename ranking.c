@@ -43,22 +43,20 @@ void adicionarAoRanking(char nome[50], int pontuacao) {
 }
 
 // Função auxiliar para exibir ranking em ordem decrescente (in-ordem invertida)
-void exibirRankingRecursivo(Ranking *no) {
-    static int posicao = 1;
-    
+void exibirRankingRecursivo(Ranking *no, int *posicao) {
     if (no == NULL) {
-        posicao = 1; // Reseta a posição quando terminar
         return;
     }
     
     // Visita primeiro o lado esquerdo (maiores pontuações)
-    exibirRankingRecursivo(no->esq);
+    exibirRankingRecursivo(no->esq, posicao);
     
     // Exibe o nó atual
-    printf("%dº lugar: %s - %d pontos\n", posicao++, no->nome, no->pontuacao);
+    printf("%dº lugar: %s - %d pontos\n", *posicao, no->nome, no->pontuacao);
+    (*posicao)++; // Incrementa a posição para o próximo jogador
     
     // Visita o lado direito (menores pontuações)
-    exibirRankingRecursivo(no->dir);
+    exibirRankingRecursivo(no->dir, posicao);
 }
 
 // Exibe o ranking em ordem decrescente
@@ -68,7 +66,8 @@ void exibirRanking() {
     if (raiz == NULL) {
         printf("Nenhuma pontuação registrada ainda.\n");
     } else {
-        exibirRankingRecursivo(raiz);
+        int posicao = 1; // Inicializa a posição com 1 para cada exibição
+        exibirRankingRecursivo(raiz, &posicao);
     }
 }
 

@@ -11,7 +11,7 @@
 
 #define LARGURA 70
 #define ALTURA 20
-#define TEMPO_JOGO 60
+#define TEMPO_JOGO 10
 
 // Função para posicionar o cursor em uma coordenada específica
 void gotoxy(int x, int y) {
@@ -47,6 +47,8 @@ void limparTela() {
 
 // Desenha o cenário do jogo em um buffer
 char cenarioBuffer[ALTURA][LARGURA];
+// Buffer para armazenar o último estado do cenário
+char ultimoCenario[ALTURA][LARGURA] = {0};
 
 void desenharCenario(Submarino *submarino, ListaObjetos *objetos) {
     int i, j;
@@ -74,18 +76,17 @@ void desenharCenario(Submarino *submarino, ListaObjetos *objetos) {
 }
 
 // Exibe o cenário na tela atualizando apenas o necessário
-void exibirCenario(int tempo, int pontos) {
+void exibirCenario(int tempo, int pontos, int forcarRedesenho) {
     int i, j;
-    static char ultimoCenario[ALTURA][LARGURA] = {0};
     
     // Atualiza apenas as informações do cabeçalho
     gotoxy(0, 0);
     printf("Missão no Fundo do Mar - Tempo: %d segundos - Pontuação: %d    ", tempo, pontos);
     
-    // Atualiza apenas o que mudou no cenário
+    // Atualiza apenas o que mudou no cenário, ou desenha tudo se forçado
     for (i = 0; i < ALTURA; i++) {
         for (j = 0; j < LARGURA; j++) {
-            if (cenarioBuffer[i][j] != ultimoCenario[i][j]) {
+            if (forcarRedesenho || cenarioBuffer[i][j] != ultimoCenario[i][j]) {
                 gotoxy(j, i+1); // +1 para pular a linha do cabeçalho
                 printf("%c", cenarioBuffer[i][j]);
                 ultimoCenario[i][j] = cenarioBuffer[i][j];
@@ -120,6 +121,29 @@ void verificarColisao(Submarino *submarino, ListaObjetos *objetos, int *pontos) 
     }
 }
 
+// Função para limpar a tela e desenhar as bordas do jogo
+void limparTelaEDesenharBordas() {
+    int i, j;
+    HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
+    DWORD written;
+    COORD pos;
+    
+    // Limpa toda a tela
+    system("cls");
+    
+    // Desenha as bordas do jogo diretamente na tela
+    for (i = 0; i < ALTURA; i++) {
+        for (j = 0; j < LARGURA; j++) {
+            if (i == 0 || i == ALTURA - 1 || j == 0 || j == LARGURA - 1) {
+                pos.X = j;
+                pos.Y = i + 1; // +1 para pular a linha do cabeçalho
+                SetConsoleCursorPosition(handle, pos);
+                FillConsoleOutputCharacter(handle, '#', 1, pos, &written);
+            }
+        }
+    }
+}
+
 // Função principal do jogo
 void jogar(char nome[50]) {
     Submarino submarino;
@@ -129,9 +153,12 @@ void jogar(char nome[50]) {
     time_t inicio, atual;
     int tempo_restante;
     
-    // Limpa a tela e esconde o cursor
-    limparTela();
+    // Limpa a tela, desenha as bordas e esconde o cursor
+    limparTelaEDesenharBordas();
     esconderCursor();
+    
+    // Força redesenho de todo o cenário (inclui as paredes)
+    memset(ultimoCenario, 0, sizeof(ultimoCenario));
     
     // Inicializa o submarino
     submarino.x = LARGURA / 2;
@@ -148,6 +175,8 @@ void jogar(char nome[50]) {
     
     // Desenha o cenário inicial
     desenharCenario(&submarino, &objetos);
+    // Força o redesenho completo na primeira vez
+    exibirCenario(TEMPO_JOGO, 0, 1);
     
     // Marca o tempo inicial
     time(&inicio);
@@ -163,7 +192,7 @@ void jogar(char nome[50]) {
         
         // Desenha e exibe o cenário
         desenharCenario(&submarino, &objetos);
-        exibirCenario(tempo_restante, pontos);
+        exibirCenario(tempo_restante, pontos, 0);
         
         // Verifica entrada do teclado (sem bloquear)
         if (_kbhit()) {
@@ -193,7 +222,7 @@ void jogar(char nome[50]) {
         verificarColisao(&submarino, &objetos, &pontos);
         
         // Pequena pausa para controlar a velocidade do jogo
-        Sleep(50);
+        Sleep(10);
     }
     
     // Fim do jogo
@@ -239,11 +268,16 @@ void menuPrincipal() {
             case 1:
                 if (filaVazia(&fila)) {
                     limparTela();
+                    // Limpa também o buffer de último cenário
+                    memset(ultimoCenario, 0, sizeof(ultimoCenario));
                     printf("Digite seu nome: ");
                     scanf("%s", nome);
                     jogar(nome);
                 } else {
                     // Pega o primeiro jogador da fila
+                    limparTela();
+                    // Limpa também o buffer de último cenário
+                    memset(ultimoCenario, 0, sizeof(ultimoCenario));
                     strcpy(nome, desenfileirar(&fila));
                     printf("\nJogador %s da fila vai jogar!\n", nome);
                     printf("Pressione qualquer tecla para iniciar...");

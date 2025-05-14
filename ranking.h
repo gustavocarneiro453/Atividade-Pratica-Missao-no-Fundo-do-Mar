@@ -25,7 +25,7 @@ void liberarRanking();
 void ordenarRanking();
 
 // Funções auxiliares (não expostas no header)
-void exibirRankingRecursivo(Ranking *raiz);
+void exibirRankingRecursivo(Ranking *raiz, int *posicao);
 void liberarRankingRecursivo(Ranking *raiz);
 void contarNos(Ranking *no, int *contador);
 
