@@ -19,6 +19,7 @@ void adicionarObjeto(ListaObjetos *lista, int x, int y, int valor) {
         novo->y = y;
         novo->valor = valor;
         novo->visivel = 1;  // Objeto visível inicialmente
+        novo->tipo = 0;     // Por padrão é esmeralda (pode ser modificado depois)
         
         // Insere o objeto no início da lista
         novo->prox = lista->inicio;
@@ -32,11 +33,43 @@ void adicionarObjetoAleatorio(ListaObjetos *lista, int max_x, int max_y) {
     int x = (rand() % (max_x - 2)) + 1;
     int y = (rand() % (max_y - 2)) + 1;
     
-    // Gera um valor aleatório entre 10 e 50
-    int valor = (rand() % 41) + 10;
+    // Adiciona o objeto com posição aleatória
+    Objeto *novo = (Objeto*)malloc(sizeof(Objeto));
     
-    // Adiciona o objeto
-    adicionarObjeto(lista, x, y, valor);
+    if (novo != NULL) {
+        // Inicializa os valores do objeto
+        novo->x = x;
+        novo->y = y;
+        novo->visivel = 1;  // Objeto visível inicialmente
+        
+        // Tipo aleatório (0 a 4)
+        novo->tipo = rand() % 5;
+        
+        // Define o valor com base no tipo
+        switch (novo->tipo) {
+            case 0: // Esmeralda
+                novo->valor = 20;
+                break;
+            case 1: // Rubi
+                novo->valor = 15;
+                break;
+            case 2: // Ouro
+                novo->valor = 40;
+                break;
+            case 3: // Diamante
+                novo->valor = 60;
+                break;
+            case 4: // Pérola
+                novo->valor = 30;
+                break;
+            default:
+                novo->valor = 10;
+        }
+        
+        // Insere o objeto no início da lista
+        novo->prox = lista->inicio;
+        lista->inicio = novo;
+    }
 }
 
 // Remove um objeto da lista

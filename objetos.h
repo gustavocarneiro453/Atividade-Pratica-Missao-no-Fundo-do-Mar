@@ -7,6 +7,7 @@ typedef struct Objeto {
     int y;          // Posição Y
     int valor;      // Valor do objeto (pontos)
     int visivel;    // 1 = visível, 0 = coletado/não visível
+    int tipo;       // Tipo do tesouro (0-4, representando diferentes tipos)
     struct Objeto *prox;  // Próximo objeto na lista
 } Objeto;
 
