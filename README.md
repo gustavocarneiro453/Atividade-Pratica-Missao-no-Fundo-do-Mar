@@ -12,8 +12,9 @@ Controle o submarino e colete o maior número possível de tesouros no fundo do 
 
 ## Como Jogar 🎮
 
-1. Dê um duplo clique no arquivo `compile.bat`
-2. O jogo será compilado e iniciará automaticamente
+1. Abra o terminal (PowerShell) no diretório do jogo
+2. Execute o comando: `.\compile.bat`
+3. O jogo será compilado e iniciará automaticamente
 
 ### Controles
 - Setas ou WASD: Movimenta o submarino
@@ -26,4 +27,4 @@ Controle o submarino e colete o maior número possível de tesouros no fundo do 
 ## Observações 📝
 - O jogo salva automaticamente seu progresso no ranking
 - Dicas de IA aparecem na tela para ajudar durante o jogo
-- Você tem 60 segundos para coletar o máximo de tesouros possível 
+- Você tem 30 segundos para coletar o máximo de tesouros possível 

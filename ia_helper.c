@@ -7,7 +7,7 @@
 
 #define GEMINI_API_KEY "AIzaSyBBp9kF6r-kIe0ACaqNzdUQm-j606hjF9A"
 #define GEMINI_API_URL "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
-#define INTERVALO_DICAS 5 // Mostra dica a cada 5 segundos
+#define INTERVALO_DICAS 10 // Mostra dica a cada 10 segundos
 
 // Estrutura para armazenar a resposta da API
 struct MemoryStruct {
@@ -47,6 +47,26 @@ void inicializar_ia(void) {
     curl = curl_easy_init();
 }
 
+// Limpa a string removendo quebras de linha e caracteres especiais
+void limpar_string(char *str) {
+    int i, j = 0;
+    // Remove caracteres especiais e espaços extras
+    for (i = 0; str[i] != '\0'; i++) {
+        if (str[i] != '\n' && str[i] != '\r' && str[i] != '\\' && 
+            str[i] != '\t' && str[i] != '"' && !(str[i] == 'n' && str[i+1] == '\0')) {
+            str[j] = str[i];
+            j++;
+        }
+    }
+    str[j] = '\0';
+
+    // Remove espaços no final
+    while (j > 0 && (str[j-1] == ' ' || str[j-1] == 'n')) {
+        j--;
+        str[j] = '\0';
+    }
+}
+
 // Obtém uma dica da IA com base no estado atual do jogo
 char* obter_dica_ia(int pontos, int tempo_restante, int tesouros_coletados) {
     if (!curl) return "Sistema de IA não inicializado";
@@ -74,8 +94,9 @@ char* obter_dica_ia(int pontos, int tempo_restante, int tesouros_coletados) {
     snprintf(payload, sizeof(payload),
         "{"
         "\"contents\": [{"
-        "\"parts\":[{\"text\": \"Jogo submarino: %d pontos, %d segundos, %d tesouros. "
-        "Dê uma dica estratégica curta em português (máx 50 caracteres) sobre como melhorar.\"}]"
+        "\"parts\":[{\"text\": \"Retorne apenas uma dica curta em português (máx 50 caracteres) "
+        "para um jogo submarino onde o jogador tem %d pontos, %d segundos e %d tesouros. "
+        "Não use pontuação ou caracteres especiais.\"}]"
         "}]"
         "}", pontos, tempo_restante, tesouros_coletados);
 
@@ -99,7 +120,6 @@ char* obter_dica_ia(int pontos, int tempo_restante, int tesouros_coletados) {
         snprintf(dica, sizeof(dica), "Erro ao obter dica: %s", curl_easy_strerror(res));
     } else {
         // Processa a resposta JSON para extrair apenas o texto da dica
-        // Simplificado para exemplo - você pode usar uma biblioteca JSON adequada
         char *start = strstr(chunk.memory, "\"text\": \"");
         if (start) {
             start += 9; // Pula "\"text\": \""
@@ -109,11 +129,19 @@ char* obter_dica_ia(int pontos, int tempo_restante, int tesouros_coletados) {
                 if (len > sizeof(dica) - 1) len = sizeof(dica) - 1;
                 strncpy(dica, start, len);
                 dica[len] = '\0';
+                
+                // Limpa a string de caracteres indesejados
+                limpar_string(dica);
+                
+                // Garante que a string não está vazia
+                if (strlen(dica) == 0) {
+                    strcpy(dica, "Colete mais tesouros");
+                }
             } else {
-                strcpy(dica, "Explore o fundo do mar com sabedoria!");
+                strcpy(dica, "Explore o fundo do mar");
             }
         } else {
-            strcpy(dica, "Continue explorando!");
+            strcpy(dica, "Continue explorando");
         }
     }
 
