@@ -1,4 +1,4 @@
 # Ranking - Missão no Fundo do Mar
 # Formato: Nome,Pontuação
+H,710
 HENRIQUE,240
-H,215

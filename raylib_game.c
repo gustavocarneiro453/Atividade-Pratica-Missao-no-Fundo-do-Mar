@@ -1,20 +1,44 @@
+#define WIN32_LEAN_AND_MEAN
+#define NOGDI
+#define NOUSER
+#define NOMINMAX
+#define WINDOWS_IGNORE_PACKING_MISMATCH
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 #include <math.h>  // Adicionado para as funções sin() e cos()
-#include "include/raylib.h"
+#include "include/raylib.h"  // Path correto para o raylib
 #include "submarino.h"
 #include "objetos.h"
 #include "ranking.h"
 #include "fila_jogadores.h"
+#include "ia_helper.h"  // Inclui o header da IA
+
+// Funções wrapper para desenho de texto
+void DesenharTexto(const char* texto, int x, int y, int tamanho, Color cor) {
+    DrawText(texto, x, y, tamanho, cor);
+}
+
+void DesenharTextoFormatado(const char* texto, int x, int y, int tamanho, Color cor) {
+    DrawText(texto, x, y, tamanho, cor);
+}
+
+void DesenharTextoAnimado(const char* texto, Vector2 pos, float tamanho, float espacamento, Color cor) {
+    DrawText(texto, (int)pos.x, (int)pos.y, (int)tamanho, cor);
+}
+
+void FecharJanela(void) {
+    CloseWindow();
+}
 
 #define LARGURA_TELA 800
 #define ALTURA_TELA 600
 #define LARGURA_JOGO 70
 #define ALTURA_JOGO 20
 #define TAMANHO_CELULA 25
-#define TEMPO_JOGO 15
+#define TEMPO_JOGO 60
 #define NUM_TESOUROS 30  // Número de tesouros na tela
 #define MAX_BOLHAS 50
 #define MAX_EFEITOS 10
@@ -67,7 +91,7 @@ const char* NOMES_TESOUROS[NUM_TIPOS_TESOURO] = {
 // Estruturas para elementos visuais
 typedef struct {
     Texture2D textura;
-    Rectangle origem;
+    struct Rectangle origem;  // Adiciona 'struct' antes de Rectangle
 } Sprite;
 
 // Estrutura para efeito de coleta
@@ -233,13 +257,13 @@ void carregarTexturas(Sprite *submarinoSprite, Sprite *objetoSprite) {
     // Submarino (retângulo amarelo)
     Image imagemSubmarino = GenImageColor(TAMANHO_CELULA, TAMANHO_CELULA, YELLOW);
     submarinoSprite->textura = LoadTextureFromImage(imagemSubmarino);
-    submarinoSprite->origem = (Rectangle){ 0, 0, TAMANHO_CELULA, TAMANHO_CELULA };
+    submarinoSprite->origem = (struct Rectangle){.x = 0.0f, .y = 0.0f, .width = (float)TAMANHO_CELULA, .height = (float)TAMANHO_CELULA};
     UnloadImage(imagemSubmarino);
     
     // Objeto (círculo verde)
     Image imagemObjeto = GenImageColor(TAMANHO_CELULA, TAMANHO_CELULA, GREEN);
     objetoSprite->textura = LoadTextureFromImage(imagemObjeto);
-    objetoSprite->origem = (Rectangle){ 0, 0, TAMANHO_CELULA, TAMANHO_CELULA };
+    objetoSprite->origem = (struct Rectangle){.x = 0.0f, .y = 0.0f, .width = (float)TAMANHO_CELULA, .height = (float)TAMANHO_CELULA};
     UnloadImage(imagemObjeto);
 }
 
@@ -309,7 +333,7 @@ void desenharCenario(Submarino *submarino, ListaObjetos *objetos, Sprite submari
     }
     
     // Desenha as informações do jogo
-    DrawText("Missão no Fundo do Mar", 20, 20, 20, COR_TEXTO);
+    DesenharTexto("Missão no Fundo do Mar", 20, 20, 20, COR_TEXTO);
     
     // Desenha os efeitos de coleta
     atualizarEDesenharEfeitosColeta();
@@ -331,7 +355,7 @@ void desenharBarraTempo(int tempoRestante, int tempoTotal) {
     DrawRectangle(LARGURA_TELA - 220, 80, (int)(200 * porcentagem), 20, corTempo);
     
     // Texto do tempo
-    DrawText(TextFormat("Tempo: %d s", tempoRestante), LARGURA_TELA - 220, 105, 16, WHITE);
+    DesenharTextoFormatado(TextFormat("Tempo: %d s", tempoRestante), LARGURA_TELA - 220, 105, 16, WHITE);
 }
 
 // Função para reposicionar um objeto em uma nova localização aleatória
@@ -381,6 +405,11 @@ void jogar(char nome[50]) {
     time_t inicio, atual;
     int tempo_restante = TEMPO_JOGO;
     Sprite submarinoSprite, objetoSprite;
+    int tesouros_coletados = 0;  // Novo contador
+    char dica_atual[1024] = "";  // Buffer para a dica da IA
+    
+    // Inicializa o sistema de IA
+    inicializar_ia();
     
     // Inicializa o submarino
     submarino.x = LARGURA_JOGO / 2;
@@ -427,8 +456,14 @@ void jogar(char nome[50]) {
             if (submarino.x < LARGURA_JOGO - 2) submarino.x++;
         }
         
-        // Verifica colisões
+        // Verifica colisões e atualiza contadores
+        int pontos_anteriores = pontos;
         verificarColisao(&submarino, &objetos, &pontos);
+        if (pontos > pontos_anteriores) {
+            tesouros_coletados++;
+            // Obtém uma nova dica quando coleta tesouro
+            strcpy(dica_atual, obter_dica_ia(pontos, tempo_restante, tesouros_coletados));
+        }
         
         // Desenha o jogo
         BeginDrawing();
@@ -438,11 +473,17 @@ void jogar(char nome[50]) {
         desenharCenario(&submarino, &objetos, submarinoSprite, objetoSprite);
         
         // Desenha as informações do jogo
-        DrawText(TextFormat("Pontuação: %d", pontos), LARGURA_TELA - 200, 50, 20, COR_TEXTO);
-        DrawText(TextFormat("Jogador: %s", nome), 20, 50, 20, COR_TEXTO);
+        DesenharTextoFormatado(TextFormat("Pontuação: %d", pontos), LARGURA_TELA - 200, 50, 20, COR_TEXTO);
+        DesenharTextoFormatado(TextFormat("Jogador: %s", nome), 20, 50, 20, COR_TEXTO);
         
         // Desenha a barra de tempo
         desenharBarraTempo(tempo_restante, TEMPO_JOGO);
+        
+        // Desenha a dica da IA
+        if (strlen(dica_atual) > 0) {
+            DrawRectangle(10, ALTURA_TELA - 40, LARGURA_TELA - 20, 30, (Color){0, 0, 0, 200});
+            DesenharTexto(dica_atual, 20, ALTURA_TELA - 35, 20, YELLOW);
+        }
         
         EndDrawing();
     }
@@ -456,10 +497,10 @@ void jogar(char nome[50]) {
         BeginDrawing();
         ClearBackground(BLACK);
         
-        DrawText("Fim de jogo!", LARGURA_TELA/2 - 100, ALTURA_TELA/2 - 50, 30, WHITE);
-        DrawText(TextFormat("Jogador: %s", nome), LARGURA_TELA/2 - 100, ALTURA_TELA/2, 20, WHITE);
-        DrawText(TextFormat("Pontuação final: %d", pontos), LARGURA_TELA/2 - 100, ALTURA_TELA/2 + 30, 20, WHITE);
-        DrawText("Pressione ESC para voltar ao menu", LARGURA_TELA/2 - 180, ALTURA_TELA/2 + 80, 20, WHITE);
+        DesenharTexto("Fim de jogo!", LARGURA_TELA/2 - 100, ALTURA_TELA/2 - 50, 30, WHITE);
+        DesenharTextoFormatado(TextFormat("Jogador: %s", nome), LARGURA_TELA/2 - 100, ALTURA_TELA/2, 20, WHITE);
+        DesenharTextoFormatado(TextFormat("Pontuação final: %d", pontos), LARGURA_TELA/2 - 100, ALTURA_TELA/2 + 30, 20, WHITE);
+        DesenharTexto("Pressione ESC para voltar ao menu", LARGURA_TELA/2 - 180, ALTURA_TELA/2 + 80, 20, WHITE);
         
         EndDrawing();
         
@@ -471,6 +512,9 @@ void jogar(char nome[50]) {
     
     // Libera a memória da lista de objetos
     liberarListaObjetos(&objetos);
+    
+    // Finaliza o sistema de IA
+    finalizar_ia();
 }
 
 // Função para exibir a fila atual de jogadores
@@ -494,22 +538,22 @@ void exibirFilaGrafica(FilaJogadores *fila) {
         BeginDrawing();
         ClearBackground(COR_FUNDO);
         
-        DrawText("FILA DE JOGADORES", LARGURA_TELA/2 - 150, 50, 30, WHITE);
+        DesenharTexto("FILA DE JOGADORES", LARGURA_TELA/2 - 150, 50, 30, WHITE);
         
         if (totalJogadores == 0) {
-            DrawText("Não há jogadores na fila!", LARGURA_TELA/2 - 150, ALTURA_TELA/2, 20, WHITE);
+            DesenharTexto("Não há jogadores na fila!", LARGURA_TELA/2 - 150, ALTURA_TELA/2, 20, WHITE);
         } else {
             for (int i = 0; i < contador; i++) {
-                DrawText(TextFormat("%d. %s", i+1, nomes[i]), LARGURA_TELA/2 - 150, 120 + i*30, 20, WHITE);
+                DesenharTextoFormatado(TextFormat("%d. %s", i+1, nomes[i]), LARGURA_TELA/2 - 150, 120 + i*30, 20, WHITE);
                 
                 // Desenha indicação visual para o próximo a jogar
                 if (i == 0) {
-                    DrawText("(Próximo a jogar)", LARGURA_TELA/2 + 120, 120, 20, YELLOW);
+                    DesenharTexto("(Próximo a jogar)", LARGURA_TELA/2 + 120, 120, 20, YELLOW);
                 }
             }
         }
         
-        DrawText("Pressione ESC para voltar", LARGURA_TELA/2 - 150, ALTURA_TELA - 50, 20, WHITE);
+        DesenharTexto("Pressione ESC para voltar", LARGURA_TELA/2 - 150, ALTURA_TELA - 50, 20, WHITE);
         
         EndDrawing();
         
@@ -567,7 +611,7 @@ void exibirRankingGrafico() {
         if (sin(tempoAnimacao * 2) > 0) {
             corTitulo = GOLD;
         }
-        DrawText("RANKING DE JOGADORES", LARGURA_TELA/2 - 180, 50, 30, corTitulo);
+        DesenharTexto("RANKING DE JOGADORES", LARGURA_TELA/2 - 180, 50, 30, corTitulo);
         
         // Desenha decoração temática submarina
         DrawCircle(LARGURA_TELA - 50, 50, 20 + sin(tempoAnimacao * 3) * 5, LIGHTBLUE);  // Bolha
@@ -579,12 +623,12 @@ void exibirRankingGrafico() {
         
         // Desenha as linhas do ranking
         if (totalJogadores == 0) {
-            DrawText("Nenhum jogador no ranking!", LARGURA_TELA/2 - 150, ALTURA_TELA/2, 20, WHITE);
+            DesenharTexto("Nenhum jogador no ranking!", LARGURA_TELA/2 - 150, ALTURA_TELA/2, 20, WHITE);
         } else {
             DrawRectangle(LARGURA_TELA/2 - 270, 110, 540, 40, (Color){0, 0, 80, 150});
-            DrawText("Posição", LARGURA_TELA/2 - 250, 120, 20, YELLOW);
-            DrawText("Nome", LARGURA_TELA/2 - 150, 120, 20, YELLOW);
-            DrawText("Pontuação", LARGURA_TELA/2 + 100, 120, 20, YELLOW);
+            DesenharTexto("Posição", LARGURA_TELA/2 - 250, 120, 20, YELLOW);
+            DesenharTexto("Nome", LARGURA_TELA/2 - 150, 120, 20, YELLOW);
+            DesenharTexto("Pontuação", LARGURA_TELA/2 + 100, 120, 20, YELLOW);
             
             for (int i = 0; i < totalJogadores; i++) {
                 // Cria uma visualização alternando cores para melhor legibilidade
@@ -598,23 +642,23 @@ void exibirRankingGrafico() {
                 else if (i == 1) corPosicao = LIGHTGRAY;
                 else if (i == 2) corPosicao = BROWN;
                 
-                DrawText(TextFormat("%d.", i+1), LARGURA_TELA/2 - 250, 160 + i*30, 20, corPosicao);
-                DrawText(nomes[i], LARGURA_TELA/2 - 150, 160 + i*30, 20, WHITE);
-                DrawText(TextFormat("%d", pontuacoes[i]), LARGURA_TELA/2 + 100, 160 + i*30, 20, WHITE);
+                DesenharTextoFormatado(TextFormat("%d.", i+1), LARGURA_TELA/2 - 250, 160 + i*30, 20, corPosicao);
+                DesenharTexto(nomes[i], LARGURA_TELA/2 - 150, 160 + i*30, 20, WHITE);
+                DesenharTextoFormatado(TextFormat("%d", pontuacoes[i]), LARGURA_TELA/2 + 100, 160 + i*30, 20, WHITE);
                 
                 // Anima o número da pontuação para os primeiros lugares
                 if (i < 3) {
                     float scale = 1.0f + 0.1f * sin(tempoAnimacao * 3);
                     Vector2 textSize = MeasureTextEx(GetFontDefault(), TextFormat("%d", pontuacoes[i]), 20, 1);
                     Vector2 position = {LARGURA_TELA/2 + 100 + textSize.x/2, 160 + i*30 + textSize.y/2};
-                    DrawTextEx(GetFontDefault(), TextFormat("%d", pontuacoes[i]), 
+                    DesenharTextoAnimado(TextFormat("%d", pontuacoes[i]), 
                               (Vector2){position.x - textSize.x*scale/2, position.y - textSize.y*scale/2}, 
                               20*scale, 1, corPosicao);
                 }
             }
         }
         
-        DrawText("Pressione ESC para voltar", LARGURA_TELA/2 - 150, ALTURA_TELA - 50, 20, WHITE);
+        DesenharTexto("Pressione ESC para voltar", LARGURA_TELA/2 - 150, ALTURA_TELA - 50, 20, WHITE);
         
         EndDrawing();
         
@@ -645,7 +689,7 @@ void menuPrincipal() {
         ClearBackground(COR_FUNDO);
         
         // Título do jogo
-        DrawText("MISSÃO NO FUNDO DO MAR", LARGURA_TELA/2 - 200, 100, 30, WHITE);
+        DesenharTexto("MISSÃO NO FUNDO DO MAR", LARGURA_TELA/2 - 200, 100, 30, WHITE);
         
         // Opções do menu
         const char* opcoes[] = {
@@ -658,9 +702,9 @@ void menuPrincipal() {
         // Desenha as opções do menu
         for (int i = 0; i < totalOpcoes; i++) {
             if (i == opcaoSelecionada) {
-                DrawText(opcoes[i], LARGURA_TELA/2 - 100, 200 + i*40, 20, YELLOW);
+                DesenharTexto(opcoes[i], LARGURA_TELA/2 - 100, 200 + i*40, 20, YELLOW);
             } else {
-                DrawText(opcoes[i], LARGURA_TELA/2 - 100, 200 + i*40, 20, WHITE);
+                DesenharTexto(opcoes[i], LARGURA_TELA/2 - 100, 200 + i*40, 20, WHITE);
             }
         }
         
@@ -675,8 +719,8 @@ void menuPrincipal() {
         // Campo para digitação do nome
         if (digitandoNome) {
             DrawRectangle(LARGURA_TELA/2 - 200, ALTURA_TELA/2, 400, 100, DARKGRAY);
-            DrawText("Digite seu nome:", LARGURA_TELA/2 - 180, ALTURA_TELA/2 + 20, 20, WHITE);
-            DrawText(nome, LARGURA_TELA/2 - 180, ALTURA_TELA/2 + 50, 20, WHITE);
+            DesenharTexto("Digite seu nome:", LARGURA_TELA/2 - 180, ALTURA_TELA/2 + 20, 20, WHITE);
+            DesenharTexto(nome, LARGURA_TELA/2 - 180, ALTURA_TELA/2 + 50, 20, WHITE);
             
             // Captura as teclas digitadas
             int key = GetKeyPressed();
@@ -723,7 +767,7 @@ void menuPrincipal() {
                     break;
                     
                 case 3: // Sair
-                    CloseWindow();
+                    FecharJanela();
                     break;
             }
         }
@@ -731,12 +775,11 @@ void menuPrincipal() {
         // Desenha o número de jogadores na fila
         int numJogadoresFila = tamanhoFila(&fila);
         if (numJogadoresFila > 0) {
-            DrawText(TextFormat("Jogadores na fila: %d", numJogadoresFila), 
-                     20, ALTURA_TELA - 40, 20, YELLOW);
+            DesenharTextoFormatado(TextFormat("Jogadores na fila: %d", numJogadoresFila), 20, ALTURA_TELA - 40, 20, YELLOW);
             
             // Botão para visualizar a fila
             DrawRectangle(LARGURA_TELA - 220, ALTURA_TELA - 50, 200, 30, DARKBLUE);
-            DrawText("Ver Fila (F)", LARGURA_TELA - 200, ALTURA_TELA - 45, 20, WHITE);
+            DesenharTexto("Ver Fila (F)", LARGURA_TELA - 200, ALTURA_TELA - 45, 20, WHITE);
             
             // Tecla para visualizar a fila
             if (IsKeyPressed(KEY_F)) {
@@ -941,20 +984,20 @@ void atualizarEDesenharEfeitosColeta() {
             corTexto.a = (unsigned char)(255 * alpha);
             
             // Desenha o nome do tesouro e o valor
-            DrawText(
+            DesenharTextoAnimado(
                 NOMES_TESOUROS[efeitosColeta[i].tipo],
-                efeitosColeta[i].x - 30,
-                efeitosColeta[i].y - 20,
+                (Vector2){efeitosColeta[i].x - 30, efeitosColeta[i].y - 20},
                 16 + (1.0f - alpha) * 6,
+                1,
                 corTexto
             );
             
             // Desenha o texto com o valor
-            DrawText(
+            DesenharTextoAnimado(
                 TextFormat("+%d", efeitosColeta[i].valor),
-                efeitosColeta[i].x,
-                efeitosColeta[i].y,
+                (Vector2){efeitosColeta[i].x, efeitosColeta[i].y},
                 20 + (1.0f - alpha) * 10,
+                1,
                 corTexto
             );
         }
@@ -978,6 +1021,5 @@ int main() {
     // Descarrega recursos e fecha a janela
     CloseAudioDevice();
     CloseWindow();
-    
     return 0;
 } 
