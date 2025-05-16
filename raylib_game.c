@@ -15,7 +15,7 @@
 #define ALTURA_JOGO 20
 #define TAMANHO_CELULA 25
 #define TEMPO_JOGO 15
-#define NUM_TESOUROS 6  // Número de tesouros na tela
+#define NUM_TESOUROS 30  // Número de tesouros na tela
 #define MAX_BOLHAS 50
 #define MAX_EFEITOS 10
 
