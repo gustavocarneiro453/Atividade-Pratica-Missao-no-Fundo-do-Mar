@@ -461,8 +461,12 @@ void jogar(char nome[50]) {
         verificarColisao(&submarino, &objetos, &pontos);
         if (pontos > pontos_anteriores) {
             tesouros_coletados++;
-            // Obtém uma nova dica quando coleta tesouro
-            strcpy(dica_atual, obter_dica_ia(pontos, tempo_restante, tesouros_coletados));
+        }
+        
+        // Obtém dicas da IA periodicamente
+        char* nova_dica = obter_dica_ia(pontos, tempo_restante, tesouros_coletados);
+        if (strlen(nova_dica) > 0) {
+            strcpy(dica_atual, nova_dica);
         }
         
         // Desenha o jogo
@@ -479,10 +483,12 @@ void jogar(char nome[50]) {
         // Desenha a barra de tempo
         desenharBarraTempo(tempo_restante, TEMPO_JOGO);
         
-        // Desenha a dica da IA
+        // Desenha a dica da IA apenas se houver uma dica
         if (strlen(dica_atual) > 0) {
-            DrawRectangle(10, ALTURA_TELA - 40, LARGURA_TELA - 20, 30, (Color){0, 0, 0, 200});
-            DesenharTexto(dica_atual, 20, ALTURA_TELA - 35, 20, YELLOW);
+            int largura_texto = MeasureText(dica_atual, 20);
+            int x = (LARGURA_TELA - largura_texto) / 2;
+            DrawRectangle(x - 10, ALTURA_TELA - 40, largura_texto + 20, 30, (Color){0, 0, 0, 200});
+            DesenharTexto(dica_atual, x, ALTURA_TELA - 35, 20, YELLOW);
         }
         
         EndDrawing();

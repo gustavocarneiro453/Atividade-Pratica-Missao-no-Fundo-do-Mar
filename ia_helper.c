@@ -2,16 +2,22 @@
 #include <stdlib.h>
 #include <string.h>
 #include <curl/curl.h>
+#include <time.h>
 #include "ia_helper.h"
 
 #define GEMINI_API_KEY "AIzaSyBBp9kF6r-kIe0ACaqNzdUQm-j606hjF9A"
 #define GEMINI_API_URL "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
+#define INTERVALO_DICAS 5 // Mostra dica a cada 5 segundos
 
 // Estrutura para armazenar a resposta da API
 struct MemoryStruct {
     char *memory;
     size_t size;
 };
+
+// Variáveis de controle
+static int ultima_pontuacao = 0;
+static time_t ultimo_tempo_dica = 0;
 
 // Callback para receber os dados da resposta HTTP
 static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp) {
@@ -45,20 +51,31 @@ void inicializar_ia(void) {
 char* obter_dica_ia(int pontos, int tempo_restante, int tesouros_coletados) {
     if (!curl) return "Sistema de IA não inicializado";
 
+    time_t tempo_atual;
+    time(&tempo_atual);
+
+    // Verifica se passou tempo suficiente desde a última dica
+    if (difftime(tempo_atual, ultimo_tempo_dica) < INTERVALO_DICAS && 
+        pontos == ultima_pontuacao) {
+        return "";
+    }
+
+    // Atualiza contadores
+    ultimo_tempo_dica = tempo_atual;
+    ultima_pontuacao = pontos;
+
     static char dica[1024];
     struct MemoryStruct chunk;
     chunk.memory = malloc(1);
     chunk.size = 0;
 
-    // Prepara o payload JSON
+    // Prepara o payload JSON com um prompt mais conciso
     char payload[2048];
     snprintf(payload, sizeof(payload),
         "{"
         "\"contents\": [{"
-        "\"parts\":[{\"text\": \"Você é um assistente de jogo submarino. "
-        "O jogador tem %d pontos, %d segundos restantes e coletou %d tesouros. "
-        "Dê uma dica curta e motivadora em português (máximo 100 caracteres) "
-        "para ajudá-lo a melhorar sua pontuação.\"}]"
+        "\"parts\":[{\"text\": \"Jogo submarino: %d pontos, %d segundos, %d tesouros. "
+        "Dê uma dica estratégica curta em português (máx 50 caracteres) sobre como melhorar.\"}]"
         "}]"
         "}", pontos, tempo_restante, tesouros_coletados);
 

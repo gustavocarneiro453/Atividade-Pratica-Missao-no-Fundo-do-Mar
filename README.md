@@ -1,50 +1,29 @@
-# Missão no Fundo do Mar
+# Missão no Fundo do Mar 🌊
 
-Um jogo simples em C onde você controla um submarino para coletar objetos no fundo do mar.
+Jogo submarino onde você coleta tesouros enquanto explora o fundo do mar, com dicas de IA para ajudar sua jornada!
 
-## Estruturas de Dados Utilizadas
+## Objetivo 🎯
+Controle o submarino e colete o maior número possível de tesouros no fundo do mar. Cada tesouro tem valores diferentes:
+- Diamante: 60 pontos
+- Ouro: 40 pontos
+- Pérola: 30 pontos
+- Esmeralda: 20 pontos
+- Rubi: 15 pontos
 
-1. **Lista Encadeada**: Usada para armazenar os objetos coletáveis no cenário.
-2. **Fila**: Implementada para gerenciar a ordem dos jogadores que participam das partidas.
-3. **Árvore Binária de Busca**: Utilizada para organizar o ranking de pontuações.
-4. **Algoritmo de Ordenação**: Quick Sort para ordenar as pontuações no ranking.
+## Como Jogar 🎮
 
-## Como Compilar
+1. Dê um duplo clique no arquivo `compile.bat`
+2. O jogo será compilado e iniciará automaticamente
 
-Para compilar o jogo, utilize o seguinte comando no terminal:
+### Controles
+- Setas ou WASD: Movimenta o submarino
+- ESC: Sair/Voltar ao menu
 
-```
-gcc -o missao_no_fundo_do_mar main.c objetos.c ranking.c fila_jogadores.c -Wall
-```
+## Requisitos 🔧
+- Windows
+- As pastas `include`, `lib` e `curl-8.13.0` devem estar no mesmo diretório do jogo
 
-## Como Jogar
-
-1. Execute o programa compilado:
-   ```
-   ./missao_no_fundo_do_mar
-   ```
-
-2. No menu principal, você pode:
-   - Jogar uma partida
-   - Entrar na fila de jogadores
-   - Ver o ranking de pontuações
-   - Sair do jogo
-
-3. Durante o jogo:
-   - Use as teclas W, A, S, D para movimentar o submarino
-   - Colete os objetos (representados por 'O') para ganhar pontos
-   - O jogo termina após 60 segundos
-   - Pressione ESC para encerrar o jogo antecipadamente
-
-## Requisitos
-
-- Sistema operacional Windows (devido ao uso de conio.h e windows.h)
-- Compilador GCC
-
-## Estrutura do Projeto
-
-- `main.c`: Arquivo principal com o menu e a lógica do jogo
-- `submarino.h`: Definição da estrutura do submarino
-- `objetos.h` e `objetos.c`: Implementação da lista de objetos coletáveis
-- `ranking.h` e `ranking.c`: Implementação do sistema de ranking com árvore binária
-- `fila_jogadores.h` e `fila_jogadores.c`: Implementação da fila de jogadores 
+## Observações 📝
+- O jogo salva automaticamente seu progresso no ranking
+- Dicas de IA aparecem na tela para ajudar durante o jogo
+- Você tem 60 segundos para coletar o máximo de tesouros possível 
