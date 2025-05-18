@@ -1,4 +1,12 @@
 # Ranking - Missão no Fundo do Mar
 # Formato: Nome,Pontuação
+MATEUS,730
 H,710
+TESTE1,610
+M,510
+LUCAS,485
+TESTE01,420
+TESTE02,260
 HENRIQUE,240
+OLA,165
+TESTE2,135
